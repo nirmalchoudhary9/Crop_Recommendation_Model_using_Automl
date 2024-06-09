@@ -35,7 +35,8 @@ body = str.encode(json.dumps(data))
 
 url = 'https://crop-recommendation-proje-lkwci.eastus2.inference.ml.azure.com/score'
 # Replace this with the primary/secondary key, AMLToken, or Microsoft Entra ID token for the endpoint
-api_key = ''
+#Caution : this api key has expired
+api_key = 'ntdwBMYaujqUtbigQda2RbLlDhkbejxB'
 if not api_key:
     raise Exception("A key should be provided to invoke the endpoint")
 
