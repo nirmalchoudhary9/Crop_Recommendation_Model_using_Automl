@@ -1,0 +1,15 @@
+data =  {
+  "input_data": {
+    "columns": [
+      "N",
+      "P",
+      "K",
+      "temperature",
+      "humidity",
+      "ph",
+      "rainfall"
+    ],
+    "index": [0],
+    "data": [[78,48,22,23.08974909,63.10459626,5.588650585,70.43473609]]
+  }
+}
