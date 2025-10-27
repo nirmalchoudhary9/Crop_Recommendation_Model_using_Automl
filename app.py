@@ -2,18 +2,11 @@ import streamlit as st
 import json
 import urllib.request
 
-# ==============================
-# Azure Endpoint Configuration
-# ==============================
 AZURE_URL = "https://crop-recommendation-ws-lujnn.centralus.inference.ml.azure.com/score"
 API_KEY = "3YUIeOtvweqdnQjwEdwXyffxxvCszRGVgUJpFeePJfdgfrmkModvJQQJ99BJAAAAAAAAAAAAINFRAZML4YjA"
 
-# ==============================
-# Streamlit Page Setup
-# ==============================
 st.set_page_config(page_title="🌾 Crop Recommendation System", page_icon="🌱", layout="centered")
 
-# Custom CSS for styling
 st.markdown("""
 <style>
     .main {
@@ -49,9 +42,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ==============================
-# App Header
-# ==============================
 st.title("🌾 Intelligent Crop Recommendation")
 st.markdown("""
 This system uses an **Azure Machine Learning** model to recommend the most suitable crop  
@@ -61,9 +51,7 @@ based on soil nutrients and environmental conditions.
 if not API_KEY:
     st.warning("⚠️ Please add your Azure API key in the code before using the app.")
 
-# ==============================
-# Input Section
-# ==============================
+
 with st.container():
     st.subheader("🧪 Enter Soil and Weather Parameters")
 
@@ -79,9 +67,6 @@ with st.container():
         ph = st.number_input("pH value", min_value=0.0, max_value=14.0, step=0.1, value=6.5)
         rainfall = st.number_input("Rainfall (mm)", min_value=0.0, step=0.1, value=100.0)
 
-# ==============================
-# Azure API Request Function
-# ==============================
 def get_crop_recommendation(inputs: dict):
     """Send user inputs to Azure endpoint and return the prediction result."""
     body = str.encode(json.dumps(inputs))
@@ -104,13 +89,15 @@ def get_crop_recommendation(inputs: dict):
         st.error(f"⚠️ Unexpected error: {e}")
         return None
 
-# ==============================
-# Prediction Button
-# ==============================
 st.markdown("---")
 st.subheader("🌱 Get Recommendation")
 
-if st.button("🔍 Recommend Best Crop"):
+# Center the button using Streamlit columns
+col1, col2, col3 = st.columns([1, 1, 1])
+with col2:
+    predict_btn = st.button("🔍 Recommend Best Crop")
+
+if predict_btn:
     # Prepare JSON data
     data = {
         "input_data": {
@@ -125,24 +112,25 @@ if st.button("🔍 Recommend Best Crop"):
 
     if result:
         try:
-            # Extract and clean up prediction
             if isinstance(result, dict):
-                # Flatten nested responses
                 result_text = str(list(result.values())[0]) if len(result) == 1 else str(result)
             elif isinstance(result, list):
                 result_text = str(result[0])
             else:
                 result_text = str(result)
 
-            # Clean up output like `[0:"maize"]`
-            result_text = result_text.replace("[", "").replace("]", "").replace("{", "").replace("}", "")
-            result_text = result_text.replace("0:", "").replace('"', '').strip()
+            result_text = (
+                result_text.replace("[", "")
+                .replace("]", "")
+                .replace("{", "")
+                .replace("}", "")
+                .replace("0:", "")
+                .replace('"', "")
+                .strip()
+            )
 
             st.success(f"✅ **Recommended Crop: {result_text.capitalize()}**")
-
-            st.balloons()
 
         except Exception as e:
             st.error(f"⚠️ Could not parse the response: {e}")
             st.json(result)
-
