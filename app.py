@@ -1,22 +1,24 @@
 import streamlit as st
-import pandas as pd
-import pickle
+import json
+import urllib.request
 
-# ----------------------------
-# Load your trained model
-# ----------------------------
-MODEL_PATH = "Model/model.pkl"   # update this if your model is elsewhere
-with open(MODEL_PATH, "rb") as file:
-    model = pickle.load(file)
+# ==============================
+# Azure Endpoint Configuration
+# ==============================
+AZURE_URL = "https://crop-recommendation-ws-lujnn.centralus.inference.ml.azure.com/score"
+API_KEY = ""  # 🔑 Paste your Azure endpoint key here
 
-# ----------------------------
-# Streamlit App UI
-# ----------------------------
+if not API_KEY:
+    st.error("⚠️ Please set your Azure API key in the code before using the app.")
+
+# ==============================
+# Streamlit UI
+# ==============================
 st.set_page_config(page_title="🌾 Crop Recommendation System", page_icon="🌱", layout="centered")
 
-st.title("🌾 Crop Recommendation System")
+st.title("🌾 Crop Recommendation System (Azure Deployed)")
 st.markdown("""
-Enter the soil and climate parameters below to get the best crop recommendation.
+Enter the soil and climate parameters below to get a crop recommendation from your **Azure ML model**.
 """)
 
 # Input fields
@@ -32,16 +34,58 @@ with col3:
     ph = st.number_input("pH value", min_value=0.0, max_value=14.0, step=0.1)
     rainfall = st.number_input("Rainfall (mm)", min_value=0.0, step=0.1)
 
-# Prediction button
-if st.button("🌱 Recommend Crop"):
-    # Prepare input for prediction
-    input_data = pd.DataFrame([[N, P, K, temperature, humidity, ph, rainfall]],
-                              columns=['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall'])
+# ==============================
+# API Request Function
+# ==============================
+def get_crop_recommendation(inputs: dict):
+    """Send user inputs to Azure endpoint and return the prediction result."""
+    body = str.encode(json.dumps(inputs))
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + API_KEY
+    }
+
+    req = urllib.request.Request(AZURE_URL, body, headers)
 
     try:
-        prediction = model.predict(input_data)[0]
-        st.success(f"✅ Recommended Crop: **{prediction.upper()}**")
+        response = urllib.request.urlopen(req)
+        result = response.read().decode("utf-8")
+        return json.loads(result)
+    except urllib.error.HTTPError as error:
+        st.error(f"❌ Request failed with status code: {error.code}")
+        st.text(error.read().decode("utf8", "ignore"))
+        return None
     except Exception as e:
-        st.error(f"⚠️ Error during prediction: {e}")
+        st.error(f"⚠️ Unexpected error: {e}")
+        return None
 
+# ==============================
+# Submit Button
+# ==============================
+if st.button("🌱 Recommend Crop"):
+    # Prepare data for Azure endpoint
+    data = {
+        "data": [
+            {
+                "N": N,
+                "P": P,
+                "K": K,
+                "temperature": temperature,
+                "humidity": humidity,
+                "ph": ph,
+                "rainfall": rainfall
+            }
+        ]
+    }
 
+    with st.spinner("Fetching crop recommendation from Azure..."):
+        result = get_crop_recommendation(data)
+
+    if result:
+        # Try to extract prediction from result
+        try:
+            prediction = result.get("result", result)
+            st.success(f"✅ Recommended Crop: **{prediction}**")
+        except Exception:
+            st.json(result)
