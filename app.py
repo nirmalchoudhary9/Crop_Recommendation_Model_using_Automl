@@ -35,7 +35,7 @@ with col3:
     rainfall = st.number_input("Rainfall (mm)", min_value=0.0, step=0.1)
 
 # ==============================
-# API Request Function
+# Azure API Request Function
 # ==============================
 def get_crop_recommendation(inputs: dict):
     """Send user inputs to Azure endpoint and return the prediction result."""
@@ -64,28 +64,26 @@ def get_crop_recommendation(inputs: dict):
 # Submit Button
 # ==============================
 if st.button("🌱 Recommend Crop"):
-    # Prepare data for Azure endpoint
+    # Prepare data in the format expected by Azure ML endpoint
     data = {
-        "data": [
-            {
-                "N": N,
-                "P": P,
-                "K": K,
-                "temperature": temperature,
-                "humidity": humidity,
-                "ph": ph,
-                "rainfall": rainfall
-            }
-        ]
+        "input_data": {
+            "columns": ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"],
+            "index": [0],
+            "data": [[N, P, K, temperature, humidity, ph, rainfall]]
+        }
     }
 
     with st.spinner("Fetching crop recommendation from Azure..."):
         result = get_crop_recommendation(data)
 
     if result:
-        # Try to extract prediction from result
         try:
-            prediction = result.get("result", result)
+            # Try to extract the crop prediction from result
+            prediction = (
+                result.get("result")
+                or result.get("predictions")
+                or result
+            )
             st.success(f"✅ Recommended Crop: **{prediction}**")
         except Exception:
             st.json(result)
