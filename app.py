@@ -6,7 +6,7 @@ import urllib.request
 # Azure Endpoint Configuration
 # ==============================
 AZURE_URL = "https://crop-recommendation-ws-lujnn.centralus.inference.ml.azure.com/score"
-API_KEY = ""  # 🔑 Paste your Azure endpoint key here
+API_KEY = "3YUIeOtvweqdnQjwEdwXyffxxvCszRGVgUJpFeePJfdgfrmkModvJQQJ99BJAAAAAAAAAAAAINFRAZML4YjA"
 
 if not API_KEY:
     st.error("⚠️ Please set your Azure API key in the code before using the app.")
@@ -89,3 +89,4 @@ if st.button("🌱 Recommend Crop"):
             st.success(f"✅ Recommended Crop: **{prediction}**")
         except Exception:
             st.json(result)
+
