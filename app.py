@@ -8,31 +8,76 @@ import urllib.request
 AZURE_URL = "https://crop-recommendation-ws-lujnn.centralus.inference.ml.azure.com/score"
 API_KEY = "3YUIeOtvweqdnQjwEdwXyffxxvCszRGVgUJpFeePJfdgfrmkModvJQQJ99BJAAAAAAAAAAAAINFRAZML4YjA"
 
-if not API_KEY:
-    st.error("⚠️ Please set your Azure API key in the code before using the app.")
-
 # ==============================
-# Streamlit UI
+# Streamlit Page Setup
 # ==============================
 st.set_page_config(page_title="🌾 Crop Recommendation System", page_icon="🌱", layout="centered")
 
-st.title("🌾 Crop Recommendation System (Azure Deployed)")
+# Custom CSS for styling
 st.markdown("""
-Enter the soil and climate parameters below to get a crop recommendation from your **Azure ML model**.
+<style>
+    .main {
+        background-color: #f9fafb;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h1, h2, h3, h4 {
+        color: #2e7d32;
+        text-align: center;
+        font-weight: 700;
+    }
+    .stButton>button {
+        width: 100%;
+        background-color: #2e7d32;
+        color: white;
+        font-size: 1.1em;
+        font-weight: 600;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #43a047;
+        transform: scale(1.02);
+    }
+    .footer {
+        text-align: center;
+        font-size: 0.9em;
+        color: #777;
+        margin-top: 2rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ==============================
+# App Header
+# ==============================
+st.title("🌾 Intelligent Crop Recommendation")
+st.markdown("""
+This system uses an **Azure Machine Learning** model to recommend the most suitable crop  
+based on soil nutrients and environmental conditions.
 """)
 
-# Input fields
-col1, col2, col3 = st.columns(3)
-with col1:
-    N = st.number_input("Nitrogen (N)", min_value=0.0, step=1.0)
-    P = st.number_input("Phosphorus (P)", min_value=0.0, step=1.0)
-    K = st.number_input("Potassium (K)", min_value=0.0, step=1.0)
-with col2:
-    temperature = st.number_input("Temperature (°C)", min_value=0.0, step=0.1)
-    humidity = st.number_input("Humidity (%)", min_value=0.0, step=0.1)
-with col3:
-    ph = st.number_input("pH value", min_value=0.0, max_value=14.0, step=0.1)
-    rainfall = st.number_input("Rainfall (mm)", min_value=0.0, step=0.1)
+if not API_KEY:
+    st.warning("⚠️ Please add your Azure API key in the code before using the app.")
+
+# ==============================
+# Input Section
+# ==============================
+with st.container():
+    st.subheader("🧪 Enter Soil and Weather Parameters")
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        N = st.number_input("Nitrogen (N)", min_value=0.0, step=1.0, value=0.0)
+        P = st.number_input("Phosphorus (P)", min_value=0.0, step=1.0, value=0.0)
+        K = st.number_input("Potassium (K)", min_value=0.0, step=1.0, value=0.0)
+    with col2:
+        temperature = st.number_input("Temperature (°C)", min_value=0.0, step=0.1, value=25.0)
+        humidity = st.number_input("Humidity (%)", min_value=0.0, step=0.1, value=60.0)
+    with col3:
+        ph = st.number_input("pH value", min_value=0.0, max_value=14.0, step=0.1, value=6.5)
+        rainfall = st.number_input("Rainfall (mm)", min_value=0.0, step=0.1, value=100.0)
 
 # ==============================
 # Azure API Request Function
@@ -47,7 +92,6 @@ def get_crop_recommendation(inputs: dict):
     }
 
     req = urllib.request.Request(AZURE_URL, body, headers)
-
     try:
         response = urllib.request.urlopen(req)
         result = response.read().decode("utf-8")
@@ -61,10 +105,13 @@ def get_crop_recommendation(inputs: dict):
         return None
 
 # ==============================
-# Submit Button
+# Prediction Button
 # ==============================
-if st.button("🌱 Recommend Crop"):
-    # Prepare data in the format expected by Azure ML endpoint
+st.markdown("---")
+st.subheader("🌱 Get Recommendation")
+
+if st.button("🔍 Recommend Best Crop"):
+    # Prepare JSON data
     data = {
         "input_data": {
             "columns": ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"],
@@ -73,18 +120,29 @@ if st.button("🌱 Recommend Crop"):
         }
     }
 
-    with st.spinner("Fetching crop recommendation from Azure..."):
+    with st.spinner("Fetching prediction from Azure..."):
         result = get_crop_recommendation(data)
 
     if result:
         try:
-            # Try to extract the crop prediction from result
-            prediction = (
-                result.get("result")
-                or result.get("predictions")
-                or result
-            )
-            st.success(f"✅ Recommended Crop: **{prediction}**")
-        except Exception:
+            # Extract and clean up prediction
+            if isinstance(result, dict):
+                # Flatten nested responses
+                result_text = str(list(result.values())[0]) if len(result) == 1 else str(result)
+            elif isinstance(result, list):
+                result_text = str(result[0])
+            else:
+                result_text = str(result)
+
+            # Clean up output like `[0:"maize"]`
+            result_text = result_text.replace("[", "").replace("]", "").replace("{", "").replace("}", "")
+            result_text = result_text.replace("0:", "").replace('"', '').strip()
+
+            st.success(f"✅ **Recommended Crop: {result_text.capitalize()}**")
+
+            st.balloons()
+
+        except Exception as e:
+            st.error(f"⚠️ Could not parse the response: {e}")
             st.json(result)
 
