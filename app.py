@@ -5,7 +5,7 @@ import pickle
 # ----------------------------
 # Load your trained model
 # ----------------------------
-MODEL_PATH = "crop_model.pkl"   # update this if your model is elsewhere
+MODEL_PATH = "Model/model.pkl"   # update this if your model is elsewhere
 with open(MODEL_PATH, "rb") as file:
     model = pickle.load(file)
 
@@ -43,4 +43,5 @@ if st.button("🌱 Recommend Crop"):
         st.success(f"✅ Recommended Crop: **{prediction.upper()}**")
     except Exception as e:
         st.error(f"⚠️ Error during prediction: {e}")
+
 
